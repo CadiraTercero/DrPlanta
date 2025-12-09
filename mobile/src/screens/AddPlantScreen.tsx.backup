@@ -1,0 +1,169 @@
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { plantService } from '../services/plant.service';
+import { CreatePlantDto } from '../types/plant';
+
+export default function AddPlantScreen() {
+  const navigation = useNavigation<any>();
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<CreatePlantDto>({
+    name: '',
+    location: '',
+    acquisitionDate: '',
+    notes: '',
+  });
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) {
+      Alert.alert('Validation Error', 'Plant name is required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await plantService.createPlant({
+        ...formData,
+        name: formData.name.trim(),
+        location: formData.location?.trim() || undefined,
+        notes: formData.notes?.trim() || undefined,
+        acquisitionDate: formData.acquisitionDate?.trim() || undefined,
+      });
+      Alert.alert('Success', 'Plant added to your garden!', [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to add plant');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Text style={styles.cancelButton}>Cancel</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Add Plant</Text>
+        <TouchableOpacity onPress={handleSubmit} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#4CAF50" />
+          ) : (
+            <Text style={styles.saveButton}>Save</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.form}>
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Plant Name *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., Monstera Deliciosa"
+            value={formData.name}
+            onChangeText={(text) => setFormData({ ...formData, name: text })}
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Location</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., Living Room"
+            value={formData.location}
+            onChangeText={(text) => setFormData({ ...formData, location: text })}
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Acquisition Date</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM-DD"
+            value={formData.acquisitionDate}
+            onChangeText={(text) =>
+              setFormData({ ...formData, acquisitionDate: text })
+            }
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Notes</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Add notes about your plant..."
+            value={formData.notes}
+            onChangeText={(text) => setFormData({ ...formData, notes: text })}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cancelButton: {
+    fontSize: 16,
+    color: '#666',
+  },
+  saveButton: {
+    fontSize: 16,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  form: {
+    flex: 1,
+    padding: 16,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  textArea: {
+    height: 100,
+    paddingTop: 12,
+  },
+});

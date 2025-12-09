@@ -1,0 +1,20 @@
+.App {
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+}
+
+.App-header h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  color: #2d5016;
+}
+
+.App-header p {
+  font-size: 1.2rem;
+  color: #666;
+}
