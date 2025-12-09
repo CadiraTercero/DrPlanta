@@ -61,5 +61,13 @@ const getEnvVars = (env = 'dev') => {
   return ENV.dev;
 };
 
-// Default to development environment
-export default getEnvVars();
+// Detect if we're in a standalone build (not Expo Go)
+const isStandaloneBuild = !Constants.expoConfig?.hostUri && !__DEV__;
+
+// Use production environment for standalone builds, dev for Expo Go
+const environment = isStandaloneBuild ? 'prod' : 'dev';
+
+console.log('🌐 [ENV] Is Standalone Build:', isStandaloneBuild);
+console.log('🌐 [ENV] Environment:', environment);
+
+export default getEnvVars(environment);
