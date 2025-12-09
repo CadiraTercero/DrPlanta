@@ -16,7 +16,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             type: 'postgres',
             url: databaseUrl,
             entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-            synchronize: configService.get<string>('NODE_ENV') !== 'production',
+            synchronize: configService.get<string>('TYPEORM_SYNCHRONIZE') === 'true'
+              ? true
+              : configService.get<string>('NODE_ENV') !== 'production',
             logging: configService.get<string>('NODE_ENV') === 'development',
             migrations: [__dirname + '/migrations/*{.ts,.js}'],
             migrationsRun: false,
