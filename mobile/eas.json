@@ -19,7 +19,7 @@
         "simulator": false
       },
       "env": {
-        "API_URL": "PLACEHOLDER_FOR_RAILWAY_URL"
+        "API_URL": "https://drplanta-production.up.railway.app/api/v1"
       }
     },
     "production": {
@@ -30,7 +30,7 @@
         "simulator": false
       },
       "env": {
-        "API_URL": "PLACEHOLDER_FOR_RAILWAY_URL"
+        "API_URL": "https://drplanta-production.up.railway.app/api/v1"
       }
     }
   },

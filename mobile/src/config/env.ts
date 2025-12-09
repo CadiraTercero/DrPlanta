@@ -45,11 +45,11 @@ const ENV = {
     environment: 'development',
   },
   staging: {
-    apiUrl: 'https://staging-api.drplantes.com/api/v1',
+    apiUrl: 'https://drplanta-production.up.railway.app/api/v1',
     environment: 'staging',
   },
   prod: {
-    apiUrl: 'https://api.drplantes.com/api/v1',
+    apiUrl: 'https://drplanta-production.up.railway.app/api/v1',
     environment: 'production',
   },
 };
