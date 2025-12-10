@@ -251,7 +251,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   /**
    * Sync guest data to backend after registration/login
-   * This is a placeholder - actual implementation will be in the sync service
    */
   const syncGuestData = async () => {
     try {
@@ -265,18 +264,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
-      // TODO: Implement actual sync logic
-      // This will be implemented in a separate sync service
-      console.log('Sync functionality will be implemented in sync service');
+      // Import sync service dynamically to avoid circular dependencies
+      const { syncService } = await import('../services/sync.service');
+
+      // Perform sync
+      const syncResult = await syncService.syncGuestData((progress) => {
+        console.log(`Sync progress: ${progress.step} (${progress.percentage}%)`);
+      });
+
+      // Check if sync was successful
+      if (!syncResult.success) {
+        throw new Error(`Sync failed: ${syncResult.errors.join(', ')}`);
+      }
+
+      console.log(`Sync completed: ${syncResult.plantsSynced} plants, ${syncResult.waterEventsSynced} water events`);
 
       // After successful sync, clear guest data and exit guest mode
       await clearGuestData();
       await setGuestMode(false);
       setIsGuest(false);
       setHasLocal(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error syncing guest data:', error);
-      throw error;
+      throw new Error(error.message || 'Failed to sync data');
     } finally {
       setLoading(false);
     }
