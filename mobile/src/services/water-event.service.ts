@@ -22,14 +22,28 @@ export const waterEventService = {
     if (guestMode) {
       // Filter events from local storage by date range
       const localEvents = await getGuestWaterEvents<LocalWaterEvent>();
+      console.log(`[getEventsForDateRange] Total events in storage: ${localEvents.length}`);
+      console.log(`[getEventsForDateRange] Querying range: ${startDate} to ${endDate}`);
+      console.log(`[getEventsForDateRange] All events:`, localEvents.map(e => ({
+        id: e.id,
+        scheduledDate: e.scheduledDate,
+        status: e.status,
+      })));
+
       const start = new Date(startDate);
       const end = new Date(endDate);
 
+      console.log(`[getEventsForDateRange] Start date object:`, start);
+      console.log(`[getEventsForDateRange] End date object:`, end);
+
       const filtered = localEvents.filter(event => {
         const eventDate = new Date(event.scheduledDate);
-        return eventDate >= start && eventDate <= end;
+        const inRange = eventDate >= start && eventDate <= end;
+        console.log(`[getEventsForDateRange] Event ${event.scheduledDate}: eventDate=${eventDate}, inRange=${inRange}`);
+        return inRange;
       });
 
+      console.log(`[getEventsForDateRange] Filtered ${filtered.length} events`);
       return filtered;
     }
 
