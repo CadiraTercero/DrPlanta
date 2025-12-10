@@ -2,13 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Text, Button, Avatar, Divider, useTheme, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
+import { getGuestPlants } from '../utils/storage';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../navigation/RootNavigator';
 import api from '../services/api';
+
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export default function ProfileScreen() {
   const theme = useTheme();
-  const { user, logout, loading: authLoading } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
+  const { user, logout, loading: authLoading, isGuestMode, hasLocalData, syncGuestData } = useAuth();
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileData, setProfileData] = useState(user);
+  const [plantCount, setPlantCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   /**
    * Fetch fresh profile data
@@ -55,13 +64,51 @@ export default function ProfileScreen() {
   };
 
   /**
+   * Handle navigation to register/login screens
+   */
+  const handleNavigateToRegister = () => {
+    navigation.navigate('Register');
+  };
+
+  const handleNavigateToLogin = () => {
+    navigation.navigate('Login');
+  };
+
+  /**
+   * Handle syncing guest data
+   */
+  const handleSyncData = async () => {
+    try {
+      setIsSyncing(true);
+      await syncGuestData();
+      Alert.alert('Success', 'Your data has been synced successfully!');
+    } catch (error: any) {
+      Alert.alert('Sync Failed', error.message || 'Failed to sync data. Please try again.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  /**
+   * Load guest plant count
+   */
+  const loadGuestData = async () => {
+    if (isGuestMode) {
+      const plants = await getGuestPlants();
+      setPlantCount(plants.length);
+    }
+  };
+
+  /**
    * Load profile on mount
    */
   useEffect(() => {
-    if (user) {
+    if (user && !isGuestMode) {
       fetchProfile();
+    } else if (isGuestMode) {
+      loadGuestData();
     }
-  }, []);
+  }, [user, isGuestMode]);
 
   /**
    * Get initials from name for avatar
@@ -115,6 +162,105 @@ export default function ProfileScreen() {
           Loading profile...
         </Text>
       </View>
+    );
+  }
+
+  // Guest Mode UI
+  if (isGuestMode) {
+    return (
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Guest Mode Header */}
+        <View style={styles.header}>
+          <Avatar.Icon
+            size={100}
+            icon="account-circle"
+            style={[styles.avatar, { backgroundColor: theme.colors.surfaceVariant }]}
+          />
+          <Text variant="headlineMedium" style={[styles.name, { color: theme.colors.onBackground }]}>
+            Guest Mode
+          </Text>
+          <Text variant="bodyMedium" style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>
+            {plantCount > 0 ? `${plantCount} plants stored locally` : 'No data yet'}
+          </Text>
+        </View>
+
+        {/* Sign Up Card */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <Text variant="titleMedium" style={[styles.cardTitle, { color: theme.colors.onSurface }]}>
+              Sign Up to Sync Data
+            </Text>
+            <Text variant="bodyMedium" style={[styles.cardDescription, { color: theme.colors.onSurfaceVariant }]}>
+              Create an account to backup your plants and access them from any device.
+            </Text>
+
+            <Button
+              mode="contained"
+              onPress={handleNavigateToRegister}
+              icon="account-plus"
+              style={styles.button}
+              disabled={authLoading}
+            >
+              Sign Up
+            </Button>
+
+            <View style={styles.loginLinkContainer}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Already have an account?{' '}
+              </Text>
+              <Button
+                mode="text"
+                onPress={handleNavigateToLogin}
+                disabled={authLoading}
+                compact
+              >
+                Log In
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Benefits Card */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <Text variant="titleMedium" style={[styles.cardTitle, { color: theme.colors.onSurface }]}>
+              Why sign up?
+            </Text>
+
+            <View style={styles.benefitItem}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.primary }}>✓</Text>
+              <Text variant="bodyMedium" style={[styles.benefitText, { color: theme.colors.onSurface }]}>
+                Backup your plant data
+              </Text>
+            </View>
+
+            <View style={styles.benefitItem}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.primary }}>✓</Text>
+              <Text variant="bodyMedium" style={[styles.benefitText, { color: theme.colors.onSurface }]}>
+                Access from multiple devices
+              </Text>
+            </View>
+
+            <View style={styles.benefitItem}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.primary }}>✓</Text>
+              <Text variant="bodyMedium" style={[styles.benefitText, { color: theme.colors.onSurface }]}>
+                Never lose your plants
+              </Text>
+            </View>
+
+            {hasLocalData && (
+              <View style={[styles.warningBox, { backgroundColor: '#FFF3E0' }]}>
+                <Text variant="bodySmall" style={{ color: '#E65100' }}>
+                  ⚠️ Local data will be lost if you uninstall the app without signing up first.
+                </Text>
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+      </ScrollView>
     );
   }
 
@@ -292,5 +438,35 @@ const styles = StyleSheet.create({
   },
   button: {
     marginVertical: 8,
+  },
+  subtitle: {
+    marginTop: 4,
+  },
+  cardTitle: {
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  cardDescription: {
+    marginBottom: 16,
+  },
+  loginLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  benefitText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  warningBox: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 16,
   },
 });
