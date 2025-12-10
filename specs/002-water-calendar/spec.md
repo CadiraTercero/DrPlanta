@@ -85,7 +85,11 @@ When a plant is first added to the system:
 ## Edge Cases
 
 - **What happens if a user deletes a plant with scheduled water events?**
-  - All future water events for that plant are automatically deleted
+  - All water events (past, present, and future) associated with the plant are automatically cascade deleted
+  - This includes pending, watered, postponed, and skipped events
+  - The deletion is permanent and cannot be undone
+  - Photos associated with the plant are also removed from storage
+  - No orphaned data remains in the system
 
 - **What happens if a user marks a water check on a date different from the scheduled date?**
   - The event is marked as completed on the actual date the user marked it, and the next event calculates from the completion date (not the scheduled date) to ensure proper spacing based on when the plant was actually watered
@@ -181,7 +185,12 @@ No changes required to the Plant entity. The system uses the existing `species.w
 - **When event marked as WATERED**: Create next event based on base interval (4/14/30 days) from completion date
 - **When event marked as POSTPONED**: Create new pending event based on postpone interval (2/5/10 days) from completion date
 - **When plant species changes**: Recalculate all future (not past) events using new species' intervals
-- **When plant is deleted**: Cascade delete all its water events
+- **When plant is deleted**: Cascade delete all associated data
+  - Delete all water events (past, present, future) for that plant
+  - Delete all plant photos from storage
+  - Remove plant record from database
+  - Ensure no orphaned data remains
+  - Operation is atomic - either all data is deleted or none (transaction)
 
 ## Non-Functional Requirements
 
