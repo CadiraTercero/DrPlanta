@@ -17,7 +17,7 @@ As an end user, I want a calendar-based water check system that automatically sc
 
 **Why this feature**: Consistent watering is critical to plant health, but remembering when each plant needs attention is challenging with multiple plants of different species. This feature automates the scheduling based on plant science (species water preferences) and provides a centralized calendar view.
 
-**Independent Test**: A user adds a plant with HIGH water preference, the system schedules water checks every 4 days starting from acquisition date. User views the calendar, marks a plant as watered, and sees the next check automatically scheduled. If user marks plant as "not ready yet", the check is postponed by 2 days.
+**Independent Test**: A user adds a plant with HIGH water preference and acquisition date of January 1st, the system schedules the first water check for January 5th (4 days after acquisition). User views the calendar, marks the plant as watered on January 5th, and sees the next check automatically scheduled for January 9th (4 days later). If user marks plant as "not ready yet", the check is postponed by 2 days.
 
 **Acceptance Scenarios**:
 
@@ -70,6 +70,17 @@ The system uses the plant species' `waterPreference` field from the plant-specie
 | MEDIUM          | Every 14 days  | +5 days                          |
 | LOW             | Every 30 days  | +10 days                         |
 | No Species      | Every 14 days (default) | +5 days (default MEDIUM) |
+
+### Initial Water Event Creation
+
+When a plant is first added to the system:
+
+1. **The system uses the plant's acquisition date** (the date the user purchased or received the plant) as the baseline for scheduling
+2. **The first water check is scheduled** by adding the check interval days to the acquisition date:
+   - If acquisition date is `January 1, 2025` and water preference is HIGH (4 days)
+   - First water check will be scheduled for `January 5, 2025`
+3. **If no acquisition date is provided**, the system defaults to using the current date (the date the plant was added to the app)
+4. **Subsequent water checks** are calculated from the completion date of the previous check, maintaining the regular interval
 
 ## Edge Cases
 
@@ -164,11 +175,13 @@ No changes required to the Plant entity. The system uses the existing `species.w
 
 ### Business Logic
 
-- When plant is created: Auto-create first water event
-- When event marked as WATERED: Create next event based on base interval
-- When event marked as POSTPONED: Update scheduledDate by postpone interval
-- When plant species changes: Recalculate all future events
-- When plant is deleted: Cascade delete all its water events
+- **When plant is created**: Auto-create first water event scheduled for `acquisitionDate + checkInterval` days
+  - Example: Plant with HIGH preference and acquisition date `2025-01-01` → First event scheduled for `2025-01-05`
+  - If no acquisition date provided, use current date as baseline
+- **When event marked as WATERED**: Create next event based on base interval (4/14/30 days) from completion date
+- **When event marked as POSTPONED**: Create new pending event based on postpone interval (2/5/10 days) from completion date
+- **When plant species changes**: Recalculate all future (not past) events using new species' intervals
+- **When plant is deleted**: Cascade delete all its water events
 
 ## Non-Functional Requirements
 
