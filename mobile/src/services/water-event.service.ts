@@ -44,7 +44,9 @@ export const waterEventService = {
       });
 
       console.log(`[getEventsForDateRange] Filtered ${filtered.length} events`);
-      return filtered;
+
+      // Populate plant relationship for each event
+      return this.populatePlantRelations(filtered);
     }
 
     // Get events from API
@@ -75,7 +77,8 @@ export const waterEventService = {
         return eventDate < today;
       });
 
-      return overdue;
+      // Populate plant relationship for each event
+      return this.populatePlantRelations(overdue);
     }
 
     // Get overdue events from API
@@ -248,5 +251,29 @@ export const waterEventService = {
 
     // Delete event via API
     await api.delete(`/water-events/${id}`);
+  },
+
+  /**
+   * Populate plant relationships for water events (guest mode helper)
+   */
+  async populatePlantRelations(events: WaterEvent[]): Promise<WaterEvent[]> {
+    const { plantService } = await import('./plant.service');
+
+    const eventsWithPlants = await Promise.all(
+      events.map(async (event) => {
+        try {
+          const plant = await plantService.getPlant(event.plantId);
+          return {
+            ...event,
+            plant,
+          };
+        } catch (error) {
+          console.error(`Failed to load plant for event ${event.id}:`, error);
+          return event; // Return event without plant if loading fails
+        }
+      })
+    );
+
+    return eventsWithPlants;
   },
 };
