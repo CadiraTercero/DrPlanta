@@ -121,15 +121,49 @@ export const waterEventService = {
         throw new Error('Water event not found');
       }
 
+      const currentEvent = localEvents[eventIndex];
+      const completedDate = data.completedDate || new Date().toISOString();
+
+      // Mark current event as completed
       const updatedEvent: LocalWaterEvent = {
-        ...localEvents[eventIndex],
+        ...currentEvent,
         status: data.action,
-        completedDate: data.completedDate || new Date().toISOString(),
+        completedDate,
         updatedAt: new Date().toISOString(),
       };
 
       localEvents[eventIndex] = updatedEvent;
       await setGuestWaterEvents(localEvents);
+
+      // Create next water event based on action
+      if (data.action === WaterEventStatus.WATERED || data.action === WaterEventStatus.POSTPONED) {
+        // Get plant to access species water preference
+        const { plantService } = await import('./plant.service');
+        try {
+          const plant = await plantService.getPlant(currentEvent.plantId);
+
+          if (plant.species) {
+            let daysToAdd: number;
+
+            if (data.action === WaterEventStatus.WATERED) {
+              // Use base watering interval
+              daysToAdd = this.getWateringInterval(plant.species.waterPreference);
+            } else {
+              // Use postpone interval
+              daysToAdd = this.getPostponeInterval(plant.species.waterPreference);
+            }
+
+            const nextDate = new Date(completedDate);
+            nextDate.setDate(nextDate.getDate() + daysToAdd);
+            const nextScheduledDate = nextDate.toISOString().split('T')[0];
+
+            // Create new pending event
+            await this.createWaterEvent(currentEvent.plantId, nextScheduledDate);
+          }
+        } catch (error) {
+          console.error('Failed to create next water event:', error);
+        }
+      }
 
       return updatedEvent;
     }
@@ -137,6 +171,30 @@ export const waterEventService = {
     // Complete event via API
     const response = await api.patch<WaterEvent>(`/water-events/${id}/complete`, data);
     return response.data;
+  },
+
+  /**
+   * Get watering interval based on water preference
+   */
+  getWateringInterval(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+    const intervals = {
+      HIGH: 4,
+      MEDIUM: 14,
+      LOW: 30,
+    };
+    return intervals[waterPreference] || 14;
+  },
+
+  /**
+   * Get postpone interval based on water preference
+   */
+  getPostponeInterval(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+    const intervals = {
+      HIGH: 2,
+      MEDIUM: 5,
+      LOW: 10,
+    };
+    return intervals[waterPreference] || 5;
   },
 
   /**

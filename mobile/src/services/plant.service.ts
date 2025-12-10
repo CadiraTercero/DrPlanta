@@ -223,13 +223,13 @@ export const plantService = {
   calculateDaysUntilWater(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
     switch (waterPreference) {
       case 'HIGH':
-        return 3; // Water every 3 days
+        return 4; // Water every 4 days
       case 'MEDIUM':
-        return 7; // Water every week
+        return 14; // Water every 14 days
       case 'LOW':
-        return 14; // Water every 2 weeks
+        return 30; // Water every 30 days
       default:
-        return 7;
+        return 14; // Default to MEDIUM (14 days)
     }
   },
 };
