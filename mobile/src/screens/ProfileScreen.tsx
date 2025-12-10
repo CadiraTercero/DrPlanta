@@ -90,6 +90,37 @@ export default function ProfileScreen() {
   };
 
   /**
+   * Handle clearing all guest data
+   */
+  const handleClearAllData = () => {
+    Alert.alert(
+      'Clear All Data',
+      'This will permanently delete all plants, water events, and photos stored on this device. This action cannot be undone.\n\nAre you sure?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Clear All Data',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { clearGuestData } = await import('../utils/storage');
+              await clearGuestData();
+              setPlantCount(0);
+              Alert.alert('Success', 'All data has been cleared.');
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'Failed to clear data. Please try again.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  /**
    * Load guest plant count
    */
   const loadGuestData = async () => {
@@ -271,6 +302,29 @@ export default function ProfileScreen() {
             )}
           </Card.Content>
         </Card>
+
+        {/* Developer Tools Card - Only show if there's data */}
+        {plantCount > 0 && (
+          <Card style={styles.card} mode="elevated">
+            <Card.Content>
+              <Text variant="titleMedium" style={[styles.cardTitle, { color: theme.colors.onSurface }]}>
+                Developer Tools
+              </Text>
+              <Button
+                mode="outlined"
+                onPress={handleClearAllData}
+                icon="delete-forever"
+                style={styles.button}
+                textColor={theme.colors.error}
+              >
+                Clear All Data
+              </Button>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                Permanently deletes all plants, water events, and local data
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
       </ScrollView>
     );
   }
