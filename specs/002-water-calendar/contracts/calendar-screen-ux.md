@@ -117,21 +117,30 @@ interface PendingTask {
 ```
 ┌─────────────────────────────────────┐
 │     ←  December 2025  →             │
+│         [ Today ]                    │ ← Only shown when not viewing current month
 └─────────────────────────────────────┘
 ```
 
 **Styling**:
 - Background: White
-- Padding: 16px horizontal, 12px vertical
+- Padding: 16px horizontal, 12px vertical (top section)
 - Border bottom: 1px solid #e0e0e0
 - Flex row, center aligned
 - Month/Year text: 18px, bold, #333
 - Arrow buttons: 32x32px touch target, ← and → symbols, color #4CAF50
+- Today button:
+  - Background: #4CAF50 (green)
+  - Text: White, 14px, bold
+  - Padding: 8px 20px
+  - Border radius: 16px (pill shape)
+  - Margin: 0 auto 8px (centered, below navigation)
+  - Only visible when viewing a different month than today's
 
 **Interaction**:
 - Left arrow: Navigate to previous month
 - Right arrow: Navigate to next month
 - Month label: Non-interactive
+- Today button: Navigate to current month (resets view to today's month)
 
 ### 4. Day Detail Panel (Conditional)
 
@@ -372,6 +381,7 @@ interface CalendarScreenState {
   completeEvent: (eventId: string, status: 'WATERED' | 'POSTPONED') => Promise<void>;
   previousMonth: () => void;
   nextMonth: () => void;
+  goToToday: () => void;
 }
 ```
 

@@ -91,6 +91,12 @@ export default function CalendarScreen() {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
+  // Navigate to today's month
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+  };
+
   // Handle day selection
   const selectDay = (date: Date) => {
     const dayEvents = events.filter((event) => {
@@ -201,6 +207,7 @@ export default function CalendarScreen() {
           currentMonth={currentMonth}
           onPrevious={previousMonth}
           onNext={nextMonth}
+          onToday={goToToday}
           loading={loadingMonth}
         />
 
