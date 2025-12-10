@@ -1,11 +1,35 @@
 import api from './api';
 import { Plant, CreatePlantDto, UpdatePlantDto } from '../types/plant';
+import { isGuestMode, getGuestPlants, setGuestPlants } from '../utils/storage';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Local Plant type for guest mode storage
+ */
+interface LocalPlant extends Omit<Plant, 'userId'> {
+  localCreatedAt?: string;
+  syncedToBackend?: boolean;
+}
 
 export const plantService = {
   /**
-   * Get all plants for the authenticated user
+   * Get all plants for the current user (authenticated or guest)
    */
   async getPlants(): Promise<Plant[]> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // Get plants from local storage
+      const localPlants = await getGuestPlants<LocalPlant>();
+      // Convert local plants to Plant format (add dummy userId for compatibility)
+      return localPlants.map(plant => ({
+        ...plant,
+        userId: 'guest',
+      }));
+    }
+
+    // Get plants from API
     const response = await api.get<Plant[]>('/plants');
     return response.data;
   },
@@ -14,6 +38,24 @@ export const plantService = {
    * Get a single plant by ID
    */
   async getPlant(id: string): Promise<Plant> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // Get plant from local storage
+      const localPlants = await getGuestPlants<LocalPlant>();
+      const plant = localPlants.find(p => p.id === id);
+
+      if (!plant) {
+        throw new Error('Plant not found');
+      }
+
+      return {
+        ...plant,
+        userId: 'guest',
+      };
+    }
+
+    // Get plant from API
     const response = await api.get<Plant>(`/plants/${id}`);
     return response.data;
   },
@@ -22,6 +64,37 @@ export const plantService = {
    * Create a new plant
    */
   async createPlant(data: CreatePlantDto): Promise<Plant> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // Create plant locally
+      const localPlants = await getGuestPlants<LocalPlant>();
+
+      const newPlant: LocalPlant = {
+        id: uuidv4(),
+        name: data.name,
+        location: data.location,
+        acquisitionDate: data.acquisitionDate,
+        notes: data.notes,
+        photos: data.photos || [],
+        species: undefined, // Will be populated if speciesId is provided
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        localCreatedAt: new Date().toISOString(),
+        syncedToBackend: false,
+      };
+
+      // Add to local storage
+      localPlants.push(newPlant);
+      await setGuestPlants(localPlants);
+
+      return {
+        ...newPlant,
+        userId: 'guest',
+      };
+    }
+
+    // Create plant via API
     const response = await api.post<Plant>('/plants', data);
     return response.data;
   },
@@ -30,6 +103,33 @@ export const plantService = {
    * Update an existing plant
    */
   async updatePlant(id: string, data: UpdatePlantDto): Promise<Plant> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // Update plant in local storage
+      const localPlants = await getGuestPlants<LocalPlant>();
+      const plantIndex = localPlants.findIndex(p => p.id === id);
+
+      if (plantIndex === -1) {
+        throw new Error('Plant not found');
+      }
+
+      const updatedPlant: LocalPlant = {
+        ...localPlants[plantIndex],
+        ...data,
+        updatedAt: new Date().toISOString(),
+      };
+
+      localPlants[plantIndex] = updatedPlant;
+      await setGuestPlants(localPlants);
+
+      return {
+        ...updatedPlant,
+        userId: 'guest',
+      };
+    }
+
+    // Update plant via API
     const response = await api.patch<Plant>(`/plants/${id}`, data);
     return response.data;
   },
@@ -38,6 +138,17 @@ export const plantService = {
    * Delete a plant
    */
   async deletePlant(id: string): Promise<void> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // Delete plant from local storage
+      const localPlants = await getGuestPlants<LocalPlant>();
+      const filteredPlants = localPlants.filter(p => p.id !== id);
+      await setGuestPlants(filteredPlants);
+      return;
+    }
+
+    // Delete plant via API
     await api.delete(`/plants/${id}`);
   },
 
@@ -45,6 +156,25 @@ export const plantService = {
    * Search plants by name or location
    */
   async searchPlants(searchTerm: string): Promise<Plant[]> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // Search in local storage
+      const localPlants = await getGuestPlants<LocalPlant>();
+      const searchLower = searchTerm.toLowerCase();
+
+      const filtered = localPlants.filter(plant =>
+        plant.name.toLowerCase().includes(searchLower) ||
+        (plant.location && plant.location.toLowerCase().includes(searchLower))
+      );
+
+      return filtered.map(plant => ({
+        ...plant,
+        userId: 'guest',
+      }));
+    }
+
+    // Search via API
     const response = await api.get<Plant[]>('/plants', {
       params: { search: searchTerm },
     });
