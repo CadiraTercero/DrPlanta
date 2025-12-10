@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Text, Button, Avatar, Divider, useTheme, ActivityIndicator } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { getGuestPlants } from '../utils/storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../navigation/RootNavigator';
 import api from '../services/api';
@@ -109,6 +109,17 @@ export default function ProfileScreen() {
       loadGuestData();
     }
   }, [user, isGuestMode]);
+
+  /**
+   * Refresh guest data when screen comes into focus
+   */
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isGuestMode) {
+        loadGuestData();
+      }
+    }, [isGuestMode])
+  );
 
   /**
    * Get initials from name for avatar
