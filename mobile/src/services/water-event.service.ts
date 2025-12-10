@@ -22,15 +22,31 @@ export const waterEventService = {
     if (guestMode) {
       // Filter events from local storage by date range
       const localEvents = await getGuestWaterEvents<LocalWaterEvent>();
+      console.log(`[getEventsForDateRange] Total events in storage: ${localEvents.length}`);
+      console.log(`[getEventsForDateRange] Querying range: ${startDate} to ${endDate}`);
+      console.log(`[getEventsForDateRange] All events:`, localEvents.map(e => ({
+        id: e.id,
+        scheduledDate: e.scheduledDate,
+        status: e.status,
+      })));
+
       const start = new Date(startDate);
       const end = new Date(endDate);
 
+      console.log(`[getEventsForDateRange] Start date object:`, start);
+      console.log(`[getEventsForDateRange] End date object:`, end);
+
       const filtered = localEvents.filter(event => {
         const eventDate = new Date(event.scheduledDate);
-        return eventDate >= start && eventDate <= end;
+        const inRange = eventDate >= start && eventDate <= end;
+        console.log(`[getEventsForDateRange] Event ${event.scheduledDate}: eventDate=${eventDate}, inRange=${inRange}`);
+        return inRange;
       });
 
-      return filtered;
+      console.log(`[getEventsForDateRange] Filtered ${filtered.length} events`);
+
+      // Populate plant relationship for each event
+      return this.populatePlantRelations(filtered);
     }
 
     // Get events from API
@@ -61,7 +77,8 @@ export const waterEventService = {
         return eventDate < today;
       });
 
-      return overdue;
+      // Populate plant relationship for each event
+      return this.populatePlantRelations(overdue);
     }
 
     // Get overdue events from API
@@ -107,15 +124,49 @@ export const waterEventService = {
         throw new Error('Water event not found');
       }
 
+      const currentEvent = localEvents[eventIndex];
+      const completedDate = data.completedDate || new Date().toISOString();
+
+      // Mark current event as completed
       const updatedEvent: LocalWaterEvent = {
-        ...localEvents[eventIndex],
+        ...currentEvent,
         status: data.action,
-        completedDate: data.completedDate || new Date().toISOString(),
+        completedDate,
         updatedAt: new Date().toISOString(),
       };
 
       localEvents[eventIndex] = updatedEvent;
       await setGuestWaterEvents(localEvents);
+
+      // Create next water event based on action
+      if (data.action === WaterEventStatus.WATERED || data.action === WaterEventStatus.POSTPONED) {
+        // Get plant to access species water preference
+        const { plantService } = await import('./plant.service');
+        try {
+          const plant = await plantService.getPlant(currentEvent.plantId);
+
+          if (plant.species) {
+            let daysToAdd: number;
+
+            if (data.action === WaterEventStatus.WATERED) {
+              // Use base watering interval
+              daysToAdd = this.getWateringInterval(plant.species.waterPreference);
+            } else {
+              // Use postpone interval
+              daysToAdd = this.getPostponeInterval(plant.species.waterPreference);
+            }
+
+            const nextDate = new Date(completedDate);
+            nextDate.setDate(nextDate.getDate() + daysToAdd);
+            const nextScheduledDate = nextDate.toISOString().split('T')[0];
+
+            // Create new pending event
+            await this.createWaterEvent(currentEvent.plantId, nextScheduledDate);
+          }
+        } catch (error) {
+          console.error('Failed to create next water event:', error);
+        }
+      }
 
       return updatedEvent;
     }
@@ -123,6 +174,30 @@ export const waterEventService = {
     // Complete event via API
     const response = await api.patch<WaterEvent>(`/water-events/${id}/complete`, data);
     return response.data;
+  },
+
+  /**
+   * Get watering interval based on water preference
+   */
+  getWateringInterval(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+    const intervals = {
+      HIGH: 4,
+      MEDIUM: 14,
+      LOW: 30,
+    };
+    return intervals[waterPreference] || 14;
+  },
+
+  /**
+   * Get postpone interval based on water preference
+   */
+  getPostponeInterval(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+    const intervals = {
+      HIGH: 2,
+      MEDIUM: 5,
+      LOW: 10,
+    };
+    return intervals[waterPreference] || 5;
   },
 
   /**
@@ -134,6 +209,7 @@ export const waterEventService = {
     if (guestMode) {
       // Create event locally
       const localEvents = await getGuestWaterEvents<LocalWaterEvent>();
+      console.log(`Current water events count: ${localEvents.length}`);
 
       const newEvent: LocalWaterEvent = {
         id: uuidv4(),
@@ -149,6 +225,7 @@ export const waterEventService = {
 
       localEvents.push(newEvent);
       await setGuestWaterEvents(localEvents);
+      console.log(`Water event stored. New count: ${localEvents.length}`, newEvent);
 
       return newEvent;
     }
@@ -174,5 +251,29 @@ export const waterEventService = {
 
     // Delete event via API
     await api.delete(`/water-events/${id}`);
+  },
+
+  /**
+   * Populate plant relationships for water events (guest mode helper)
+   */
+  async populatePlantRelations(events: WaterEvent[]): Promise<WaterEvent[]> {
+    const { plantService } = await import('./plant.service');
+
+    const eventsWithPlants = await Promise.all(
+      events.map(async (event) => {
+        try {
+          const plant = await plantService.getPlant(event.plantId);
+          return {
+            ...event,
+            plant,
+          };
+        } catch (error) {
+          console.error(`Failed to load plant for event ${event.id}:`, error);
+          return event; // Return event without plant if loading fails
+        }
+      })
+    );
+
+    return eventsWithPlants;
   },
 };

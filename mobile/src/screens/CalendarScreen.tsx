@@ -41,10 +41,13 @@ export default function CalendarScreen() {
     try {
       setLoadingMonth(true);
       const { startDate, endDate } = getMonthRange(date);
+      console.log(`Loading events for date range: ${startDate} to ${endDate}`);
       const data = await waterEventService.getEventsForDateRange(startDate, endDate);
+      console.log(`Loaded ${data.length} water events:`, data);
       setEvents(data);
       setError(null);
     } catch (err: any) {
+      console.error('Failed to load month events:', err);
       setError(err.message || 'Failed to load water checks');
       Alert.alert('Error', 'Failed to load water checks');
     } finally {

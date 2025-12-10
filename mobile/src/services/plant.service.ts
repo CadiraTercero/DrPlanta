@@ -70,6 +70,17 @@ export const plantService = {
       // Create plant locally
       const localPlants = await getGuestPlants<LocalPlant>();
 
+      // Get species data if speciesId is provided
+      let speciesData = undefined;
+      if (data.speciesId) {
+        try {
+          const { plantSpeciesService } = await import('./plant-species.service');
+          speciesData = await plantSpeciesService.getSpecies(data.speciesId);
+        } catch (error) {
+          console.error('Failed to load species data:', error);
+        }
+      }
+
       const newPlant: LocalPlant = {
         id: uuidv4(),
         name: data.name,
@@ -77,7 +88,7 @@ export const plantService = {
         acquisitionDate: data.acquisitionDate,
         notes: data.notes,
         photos: data.photos || [],
-        species: undefined, // Will be populated if speciesId is provided
+        species: speciesData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         localCreatedAt: new Date().toISOString(),
@@ -87,6 +98,39 @@ export const plantService = {
       // Add to local storage
       localPlants.push(newPlant);
       await setGuestPlants(localPlants);
+
+      // Create initial water event if species has watering info
+      if (speciesData) {
+        try {
+          const { waterEventService } = await import('./water-event.service');
+          const daysUntilWater = this.calculateDaysUntilWater(speciesData.waterPreference);
+
+          // Use acquisition date as baseline, or current date if not provided
+          const baselineDate = newPlant.acquisitionDate
+            ? new Date(newPlant.acquisitionDate)
+            : new Date();
+
+          const scheduledDate = new Date(baselineDate);
+          scheduledDate.setDate(scheduledDate.getDate() + daysUntilWater);
+          const scheduledDateStr = scheduledDate.toISOString().split('T')[0];
+
+          console.log(`Creating water event for plant ${newPlant.name}:`, {
+            plantId: newPlant.id,
+            acquisitionDate: newPlant.acquisitionDate,
+            baselineDate: baselineDate.toISOString().split('T')[0],
+            scheduledDate: scheduledDateStr,
+            daysUntilWater,
+            waterPreference: speciesData.waterPreference,
+          });
+
+          await waterEventService.createWaterEvent(newPlant.id, scheduledDateStr);
+          console.log(`Water event created successfully for ${newPlant.name}`);
+        } catch (error) {
+          console.error('Failed to create initial water event:', error);
+        }
+      } else {
+        console.log(`No species data for plant ${newPlant.name}, skipping water event creation`);
+      }
 
       return {
         ...newPlant,
@@ -135,20 +179,32 @@ export const plantService = {
   },
 
   /**
-   * Delete a plant
+   * Delete a plant and cascade delete all associated data
    */
   async deletePlant(id: string): Promise<void> {
     const guestMode = await isGuestMode();
 
     if (guestMode) {
-      // Delete plant from local storage
+      // Cascade delete all associated data in guest mode
+      // 1. Delete all water events for this plant
+      const { waterEventService } = await import('./water-event.service');
+      const { getGuestWaterEvents, setGuestWaterEvents } = await import('../utils/storage');
+
+      const waterEvents = await getGuestWaterEvents();
+      const filteredEvents = waterEvents.filter(e => e.plantId !== id);
+      await setGuestWaterEvents(filteredEvents);
+      console.log(`Deleted ${waterEvents.length - filteredEvents.length} water events for plant ${id}`);
+
+      // 2. Delete plant from local storage (photos are stored as file URIs, will be cleaned up by OS)
       const localPlants = await getGuestPlants<LocalPlant>();
       const filteredPlants = localPlants.filter(p => p.id !== id);
       await setGuestPlants(filteredPlants);
+      console.log(`Deleted plant ${id} from local storage`);
+
       return;
     }
 
-    // Delete plant via API
+    // Delete plant via API (backend handles cascade deletion)
     await api.delete(`/plants/${id}`);
   },
 
@@ -179,5 +235,21 @@ export const plantService = {
       params: { search: searchTerm },
     });
     return response.data;
+  },
+
+  /**
+   * Calculate days until next watering based on water preference
+   */
+  calculateDaysUntilWater(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+    switch (waterPreference) {
+      case 'HIGH':
+        return 4; // Water every 4 days
+      case 'MEDIUM':
+        return 14; // Water every 14 days
+      case 'LOW':
+        return 30; // Water every 30 days
+      default:
+        return 14; // Default to MEDIUM (14 days)
+    }
   },
 };

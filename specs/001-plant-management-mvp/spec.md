@@ -28,7 +28,13 @@ As an end user, I want a dedicated space called "My Garden" where I can register
 9. **Given** a user viewing a plant's details with a linked species, **When** they view the plant species section, **Then** they see comprehensive care information: light preference, water preference, humidity preference, toxicity warnings, difficulty level, tags, description, and care notes
 10. **Given** a user viewing a plant's details, **When** they edit the plant's name, location, or other custom fields, **Then** the changes are saved and reflected immediately in My Garden
 11. **Given** a user viewing My Garden, **When** they search or filter plants by name or location, **Then** the displayed plants update to match the criteria
-12. **Given** a user has registered plants in My Garden, **When** they delete a plant, **Then** the plant is removed from My Garden and all associated data is deleted
+12. **Given** a user has registered plants in My Garden, **When** they delete a plant, **Then** the plant is removed from My Garden and all associated data is cascade deleted:
+    - All plant photos are removed from storage
+    - All water events (from water calendar feature) are deleted
+    - All watering history records are deleted
+    - All notifications related to the plant are deleted
+    - The deletion is permanent and cannot be undone
+    - The operation is atomic - either all data is deleted or none (transaction)
 
 ---
 
