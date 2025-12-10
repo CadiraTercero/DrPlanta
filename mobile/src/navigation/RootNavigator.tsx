@@ -243,7 +243,7 @@ function AppNavigator() {
  * Handles conditional rendering based on authentication state
  */
 export default function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuestMode } = useAuth();
   const theme = useTheme();
 
   // Show loading screen while checking auth status
@@ -264,7 +264,7 @@ export default function RootNavigator() {
 
   return (
     <NavigationContainer>
-      {user ? <AppNavigator /> : <AuthNavigator />}
+      {user || isGuestMode ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
