@@ -103,13 +103,25 @@ export const plantService = {
       if (speciesData) {
         try {
           const { waterEventService } = await import('./water-event.service');
-          const daysUntilWater = plantService.calculateDaysUntilWater(speciesData.waterPreference);
+          const daysUntilWater = this.calculateDaysUntilWater(speciesData.waterPreference);
           const scheduledDate = new Date();
           scheduledDate.setDate(scheduledDate.getDate() + daysUntilWater);
-          await waterEventService.createWaterEvent(newPlant.id, scheduledDate.toISOString().split('T')[0]);
+          const scheduledDateStr = scheduledDate.toISOString().split('T')[0];
+
+          console.log(`Creating water event for plant ${newPlant.name}:`, {
+            plantId: newPlant.id,
+            scheduledDate: scheduledDateStr,
+            daysUntilWater,
+            waterPreference: speciesData.waterPreference,
+          });
+
+          await waterEventService.createWaterEvent(newPlant.id, scheduledDateStr);
+          console.log(`Water event created successfully for ${newPlant.name}`);
         } catch (error) {
           console.error('Failed to create initial water event:', error);
         }
+      } else {
+        console.log(`No species data for plant ${newPlant.name}, skipping water event creation`);
       }
 
       return {

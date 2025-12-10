@@ -134,6 +134,7 @@ export const waterEventService = {
     if (guestMode) {
       // Create event locally
       const localEvents = await getGuestWaterEvents<LocalWaterEvent>();
+      console.log(`Current water events count: ${localEvents.length}`);
 
       const newEvent: LocalWaterEvent = {
         id: uuidv4(),
@@ -149,6 +150,7 @@ export const waterEventService = {
 
       localEvents.push(newEvent);
       await setGuestWaterEvents(localEvents);
+      console.log(`Water event stored. New count: ${localEvents.length}`, newEvent);
 
       return newEvent;
     }
