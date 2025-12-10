@@ -340,16 +340,22 @@ export default function EditPlantScreen() {
             )}
             {showSpeciesResults && speciesResults.length > 0 && (
               <View style={styles.speciesResultsContainer}>
-                {speciesResults.map((species) => (
-                  <TouchableOpacity
-                    key={species.id}
-                    style={styles.speciesResultItem}
-                    onPress={() => handleSelectSpecies(species)}
-                  >
-                    <Text style={styles.speciesResultName}>{species.commonName}</Text>
-                    <Text style={styles.speciesResultLatin}>{species.latinName}</Text>
-                  </TouchableOpacity>
-                ))}
+                <ScrollView
+                  style={styles.speciesScrollView}
+                  nestedScrollEnabled={true}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {speciesResults.map((species) => (
+                    <TouchableOpacity
+                      key={species.id}
+                      style={styles.speciesResultItem}
+                      onPress={() => handleSelectSpecies(species)}
+                    >
+                      <Text style={styles.speciesResultName}>{species.commonName}</Text>
+                      <Text style={styles.speciesResultLatin}>{species.latinName}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
           </View>
@@ -592,6 +598,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  speciesScrollView: {
+    maxHeight: 200,
   },
   speciesResultItem: {
     padding: 12,
