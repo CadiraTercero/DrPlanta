@@ -21,6 +21,7 @@ export const lightTheme = {
     onSecondary: '#000000',
     onBackground: '#000000',
     onSurface: '#000000',
+    placeholder: '#999999', // Placeholder text color
   },
 };
 

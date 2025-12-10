@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   Alert,
@@ -20,6 +19,7 @@ import { plantSpeciesService } from '../services/plant-species.service';
 import { uploadService } from '../services/upload.service';
 import { CreatePlantDto, PlantSpecies } from '../types/plant';
 import { format } from 'date-fns';
+import { ThemedTextInput } from '../components/ThemedTextInput';
 
 export default function AddPlantScreen() {
   const navigation = useNavigation<any>();
@@ -250,7 +250,7 @@ export default function AddPlantScreen() {
         {/* Plant Name */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Plant Name *</Text>
-          <TextInput
+          <ThemedTextInput
             style={styles.input}
             placeholder="e.g., Monstera Deliciosa"
             value={formData.name}
@@ -262,7 +262,7 @@ export default function AddPlantScreen() {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Species</Text>
           <View>
-            <TextInput
+            <ThemedTextInput
               style={styles.input}
               placeholder="Search for plant species..."
               value={speciesQuery}
@@ -311,7 +311,7 @@ export default function AddPlantScreen() {
         {/* Location */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Location</Text>
-          <TextInput
+          <ThemedTextInput
             style={styles.input}
             placeholder="e.g., Living Room"
             value={formData.location}
@@ -349,7 +349,7 @@ export default function AddPlantScreen() {
         {/* Notes */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Notes</Text>
-          <TextInput
+          <ThemedTextInput
             style={[styles.input, styles.textArea]}
             placeholder="Add notes about your plant..."
             value={formData.notes}

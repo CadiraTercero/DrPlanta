@@ -5,11 +5,11 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   Alert,
   RefreshControl,
 } from 'react-native';
+import { ThemedTextInput } from '../components/ThemedTextInput';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { plantService } from '../services/plant.service';
@@ -118,7 +118,7 @@ export default function MyGardenScreen() {
       {/* Search Bar */}
       {plants.length > 0 && (
         <View style={styles.searchContainer}>
-          <TextInput
+          <ThemedTextInput
             style={styles.searchInput}
             placeholder="Search by name or location..."
             value={searchQuery}

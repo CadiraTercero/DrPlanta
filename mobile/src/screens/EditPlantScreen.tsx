@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   Alert,
@@ -11,6 +10,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
+import { ThemedTextInput } from '../components/ThemedTextInput';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -297,7 +297,7 @@ export default function EditPlantScreen() {
         {/* Plant Name */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Plant Name *</Text>
-          <TextInput
+          <ThemedTextInput
             style={styles.input}
             placeholder="e.g., Monstera Deliciosa"
             value={formData.name}
@@ -309,7 +309,7 @@ export default function EditPlantScreen() {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Species</Text>
           <View>
-            <TextInput
+            <ThemedTextInput
               style={styles.input}
               placeholder="Search for plant species..."
               value={speciesQuery}
@@ -358,7 +358,7 @@ export default function EditPlantScreen() {
         {/* Location */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Location</Text>
-          <TextInput
+          <ThemedTextInput
             style={styles.input}
             placeholder="e.g., Living Room"
             value={formData.location}
@@ -396,7 +396,7 @@ export default function EditPlantScreen() {
         {/* Notes */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Notes</Text>
-          <TextInput
+          <ThemedTextInput
             style={[styles.input, styles.textArea]}
             placeholder="Add notes about your plant..."
             value={formData.notes}
