@@ -261,7 +261,7 @@ export default function AddPlantScreen() {
         {/* Species Search */}
         <View style={styles.formGroup}>
           <Text style={styles.label}>Species</Text>
-          <View>
+          <View style={styles.speciesSearchWrapper}>
             <ThemedTextInput
               style={styles.input}
               placeholder="Search for plant species..."
@@ -291,21 +291,21 @@ export default function AddPlantScreen() {
                 </TouchableOpacity>
               </View>
             )}
+            {showSpeciesResults && speciesResults.length > 0 && (
+              <View style={styles.speciesResultsContainer}>
+                {speciesResults.map((species) => (
+                  <TouchableOpacity
+                    key={species.id}
+                    style={styles.speciesResultItem}
+                    onPress={() => handleSelectSpecies(species)}
+                  >
+                    <Text style={styles.speciesResultName}>{species.commonName}</Text>
+                    <Text style={styles.speciesResultLatin}>{species.latinName}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
-          {showSpeciesResults && speciesResults.length > 0 && (
-            <View style={styles.speciesResultsContainer}>
-              {speciesResults.map((species) => (
-                <TouchableOpacity
-                  key={species.id}
-                  style={styles.speciesResultItem}
-                  onPress={() => handleSelectSpecies(species)}
-                >
-                  <Text style={styles.speciesResultName}>{species.commonName}</Text>
-                  <Text style={styles.speciesResultLatin}>{species.latinName}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
         </View>
 
         {/* Location */}
@@ -489,6 +489,9 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
   },
   // Species
+  speciesSearchWrapper: {
+    position: 'relative',
+  },
   speciesSearchSpinner: {
     position: 'absolute',
     right: 12,
@@ -522,12 +525,21 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   speciesResultsContainer: {
-    marginTop: 8,
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
     backgroundColor: '#fff',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     maxHeight: 200,
+    zIndex: 1000,
+    elevation: 5, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   speciesResultItem: {
     padding: 12,
