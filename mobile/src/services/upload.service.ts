@@ -10,6 +10,12 @@ export interface UploadResponse {
  * Convert a relative URL to a full URL
  */
 const toFullUrl = (relativeUrl: string): string => {
+  // If it's a local file URI (guest mode), return as-is
+  if (relativeUrl.startsWith('file://')) {
+    return relativeUrl;
+  }
+
+  // If it's already a full URL, return as-is
   if (relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
     return relativeUrl;
   }
