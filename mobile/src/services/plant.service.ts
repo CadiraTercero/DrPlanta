@@ -179,20 +179,32 @@ export const plantService = {
   },
 
   /**
-   * Delete a plant
+   * Delete a plant and cascade delete all associated data
    */
   async deletePlant(id: string): Promise<void> {
     const guestMode = await isGuestMode();
 
     if (guestMode) {
-      // Delete plant from local storage
+      // Cascade delete all associated data in guest mode
+      // 1. Delete all water events for this plant
+      const { waterEventService } = await import('./water-event.service');
+      const { getGuestWaterEvents, setGuestWaterEvents } = await import('../utils/storage');
+
+      const waterEvents = await getGuestWaterEvents();
+      const filteredEvents = waterEvents.filter(e => e.plantId !== id);
+      await setGuestWaterEvents(filteredEvents);
+      console.log(`Deleted ${waterEvents.length - filteredEvents.length} water events for plant ${id}`);
+
+      // 2. Delete plant from local storage (photos are stored as file URIs, will be cleaned up by OS)
       const localPlants = await getGuestPlants<LocalPlant>();
       const filteredPlants = localPlants.filter(p => p.id !== id);
       await setGuestPlants(filteredPlants);
+      console.log(`Deleted plant ${id} from local storage`);
+
       return;
     }
 
-    // Delete plant via API
+    // Delete plant via API (backend handles cascade deletion)
     await api.delete(`/plants/${id}`);
   },
 
