@@ -88,7 +88,7 @@ When a plant is first added to the system:
   - All future water events for that plant are automatically deleted
 
 - **What happens if a user marks a water check on a date different from the scheduled date?**
-  - The event is marked as completed on the actual date the user marked it, and the next event calculates from the scheduled date (not the marked date) to maintain consistent intervals
+  - The event is marked as completed on the actual date the user marked it, and the next event calculates from the completion date (not the scheduled date) to ensure proper spacing based on when the plant was actually watered
 
 - **What happens if a user changes a plant's acquisition date?**
   - All future water events are recalculated from the new acquisition date
