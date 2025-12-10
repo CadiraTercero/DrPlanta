@@ -104,12 +104,20 @@ export const plantService = {
         try {
           const { waterEventService } = await import('./water-event.service');
           const daysUntilWater = this.calculateDaysUntilWater(speciesData.waterPreference);
-          const scheduledDate = new Date();
+
+          // Use acquisition date as baseline, or current date if not provided
+          const baselineDate = newPlant.acquisitionDate
+            ? new Date(newPlant.acquisitionDate)
+            : new Date();
+
+          const scheduledDate = new Date(baselineDate);
           scheduledDate.setDate(scheduledDate.getDate() + daysUntilWater);
           const scheduledDateStr = scheduledDate.toISOString().split('T')[0];
 
           console.log(`Creating water event for plant ${newPlant.name}:`, {
             plantId: newPlant.id,
+            acquisitionDate: newPlant.acquisitionDate,
+            baselineDate: baselineDate.toISOString().split('T')[0],
             scheduledDate: scheduledDateStr,
             daysUntilWater,
             waterPreference: speciesData.waterPreference,
