@@ -1,5 +1,6 @@
 import api from './api';
 import env from '../config/env';
+import { isGuestMode } from '../utils/storage';
 
 export interface UploadResponse {
   url: string;
@@ -29,6 +30,15 @@ export const uploadService = {
    * Upload a plant photo
    */
   async uploadPlantPhoto(uri: string): Promise<string> {
+    const guestMode = await isGuestMode();
+
+    if (guestMode) {
+      // In guest mode, return the local file URI directly
+      // Photos will be stored as local URIs and uploaded during sync
+      return uri;
+    }
+
+    // In authenticated mode, upload to backend
     const formData = new FormData();
 
     // Extract filename from URI

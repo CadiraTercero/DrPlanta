@@ -78,7 +78,7 @@ export const syncService = {
         percentage: 0,
       });
 
-      // 1. Sync plants first
+      // 1. Sync plants first (with photo uploads)
       for (const plant of localPlants) {
         try {
           onProgress?.({
@@ -88,12 +88,35 @@ export const syncService = {
             percentage: Math.round((currentItem / totalItems) * 100),
           });
 
+          // Upload local photos to backend
+          const uploadedPhotos: string[] = [];
+          if (plant.photos && plant.photos.length > 0) {
+            const { uploadService } = await import('./upload.service');
+
+            for (const photoUri of plant.photos) {
+              try {
+                // Check if photo is a local file URI (starts with file://)
+                if (photoUri.startsWith('file://') || !photoUri.startsWith('http')) {
+                  // Upload local photo to backend
+                  const uploadedUrl = await uploadService.uploadPlantPhoto(photoUri);
+                  uploadedPhotos.push(uploadedUrl);
+                } else {
+                  // Already a backend URL, keep as is
+                  uploadedPhotos.push(photoUri);
+                }
+              } catch (uploadError: any) {
+                console.error(`Failed to upload photo for ${plant.name}:`, uploadError);
+                // Continue without this photo rather than failing the entire plant
+              }
+            }
+          }
+
           const response = await api.post<Plant>('/plants', {
             name: plant.name,
             location: plant.location,
             acquisitionDate: plant.acquisitionDate,
             notes: plant.notes,
-            photos: plant.photos,
+            photos: uploadedPhotos,
             speciesId: plant.species?.id,
           });
 
