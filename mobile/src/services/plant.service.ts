@@ -70,6 +70,17 @@ export const plantService = {
       // Create plant locally
       const localPlants = await getGuestPlants<LocalPlant>();
 
+      // Get species data if speciesId is provided
+      let speciesData = undefined;
+      if (data.speciesId) {
+        try {
+          const { plantSpeciesService } = await import('./plant-species.service');
+          speciesData = await plantSpeciesService.getSpecies(data.speciesId);
+        } catch (error) {
+          console.error('Failed to load species data:', error);
+        }
+      }
+
       const newPlant: LocalPlant = {
         id: uuidv4(),
         name: data.name,
@@ -77,7 +88,7 @@ export const plantService = {
         acquisitionDate: data.acquisitionDate,
         notes: data.notes,
         photos: data.photos || [],
-        species: undefined, // Will be populated if speciesId is provided
+        species: speciesData,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         localCreatedAt: new Date().toISOString(),
@@ -87,6 +98,19 @@ export const plantService = {
       // Add to local storage
       localPlants.push(newPlant);
       await setGuestPlants(localPlants);
+
+      // Create initial water event if species has watering info
+      if (speciesData) {
+        try {
+          const { waterEventService } = await import('./water-event.service');
+          const daysUntilWater = plantService.calculateDaysUntilWater(speciesData.waterPreference);
+          const scheduledDate = new Date();
+          scheduledDate.setDate(scheduledDate.getDate() + daysUntilWater);
+          await waterEventService.createWaterEvent(newPlant.id, scheduledDate.toISOString().split('T')[0]);
+        } catch (error) {
+          console.error('Failed to create initial water event:', error);
+        }
+      }
 
       return {
         ...newPlant,
@@ -179,5 +203,21 @@ export const plantService = {
       params: { search: searchTerm },
     });
     return response.data;
+  },
+
+  /**
+   * Calculate days until next watering based on water preference
+   */
+  calculateDaysUntilWater(waterPreference: 'LOW' | 'MEDIUM' | 'HIGH'): number {
+    switch (waterPreference) {
+      case 'HIGH':
+        return 3; // Water every 3 days
+      case 'MEDIUM':
+        return 7; // Water every week
+      case 'LOW':
+        return 14; // Water every 2 weeks
+      default:
+        return 7;
+    }
   },
 };
