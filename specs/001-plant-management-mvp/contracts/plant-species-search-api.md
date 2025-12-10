@@ -1,7 +1,7 @@
 # API Contract: Plant Species Search
 
 **Endpoint**: `GET /api/v1/plant-species/search`
-**Authentication**: Required (JWT)
+**Authentication**: Not Required (Public endpoint)
 **Purpose**: Search for plant species to link with user plants during creation/editing
 
 ## Request
@@ -113,15 +113,9 @@ GET /api/v1/plant-species/search?q=DELICIOSA
 }
 ```
 
-### Authentication Error (401 Unauthorized)
+### ~Authentication Error (401 Unauthorized)~ REMOVED
 
-```json
-{
-  "statusCode": 401,
-  "error": "Unauthorized",
-  "message": "Invalid or missing authentication token"
-}
-```
+**Note**: Authentication is no longer required for this endpoint. The endpoint is now public to allow users to search for plant species before creating an account or when adding plants.
 
 ## Implementation Notes
 
@@ -166,7 +160,7 @@ const results = await plantSpeciesRepository
 5. Search with no results: `q=invalidplantname` → Returns empty array
 6. Search with special characters: `q=d'or` → Handles quotes/special chars safely
 7. Search with very short query: `q=m` → Returns validation error (< 2 chars)
-8. Search without authentication: → Returns 401 error
+8. ~~Search without authentication: → Returns 401 error~~ (Authentication no longer required)
 9. Search with limit parameter: `q=plant&limit=3` → Returns max 3 results
 10. Search with mixed case in multi-word query: `q=Swiss CHEESE` → Returns "Swiss Cheese Plant"
 
