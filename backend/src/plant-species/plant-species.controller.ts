@@ -2,16 +2,13 @@ import {
   Controller,
   Get,
   Query,
-  UseGuards,
   BadRequestException,
   Param,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlantSpeciesService } from './plant-species.service';
 import { PlantSpecies } from './entities/plant-species.entity';
 
 @Controller('plant-species')
-@UseGuards(JwtAuthGuard)
 export class PlantSpeciesController {
   constructor(private readonly plantSpeciesService: PlantSpeciesService) {}
 
