@@ -8,11 +8,13 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { ThemedTextInput } from '../components/ThemedTextInput';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { plantService } from '../services/plant.service';
+import { uploadService } from '../services/upload.service';
 import { Plant } from '../types/plant';
 
 export default function MyGardenScreen() {
@@ -66,6 +68,13 @@ export default function MyGardenScreen() {
       style={styles.plantCard}
       onPress={() => navigation.navigate('PlantDetail', { plantId: item.id })}
     >
+      {item.photos && item.photos.length > 0 && (
+        <Image
+          source={{ uri: uploadService.toFullUrl(item.photos[0]) }}
+          style={styles.plantPhoto}
+          resizeMode="cover"
+        />
+      )}
       <View style={styles.plantInfo}>
         <Text style={styles.plantName}>{item.name}</Text>
         {item.location && (
@@ -210,16 +219,20 @@ const styles = StyleSheet.create({
   plantCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'hidden',
+  },
+  plantPhoto: {
+    width: '100%',
+    height: 200,
   },
   plantInfo: {
-    flex: 1,
+    padding: 16,
   },
   plantName: {
     fontSize: 18,
