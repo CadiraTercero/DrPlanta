@@ -6,7 +6,11 @@ import {
   clearAuthToken,
   getUserData,
   setUserData,
-  clearUserData
+  clearUserData,
+  isGuestMode as checkGuestMode,
+  setGuestMode,
+  hasLocalGuestData,
+  clearGuestData,
 } from '../utils/storage';
 
 /**
@@ -28,10 +32,14 @@ interface AuthContextValue {
   user: User | null;
   token: string | null;
   loading: boolean;
+  isGuestMode: boolean;
+  hasLocalData: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  skipAuthentication: () => Promise<void>;
+  syncGuestData: () => Promise<void>;
 }
 
 /**
@@ -59,6 +67,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isGuest, setIsGuest] = useState<boolean>(false);
+  const [hasLocal, setHasLocal] = useState<boolean>(false);
 
   /**
    * Check authentication status on mount
@@ -73,6 +83,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const checkAuth = async () => {
     try {
       setLoading(true);
+
+      // Check if user is in guest mode
+      const guestMode = await checkGuestMode();
+      setIsGuest(guestMode);
+
+      // Check if guest has local data
+      const localData = await hasLocalGuestData();
+      setHasLocal(localData);
+
+      if (guestMode) {
+        // User is in guest mode, skip authentication check
+        setLoading(false);
+        return;
+      }
 
       // Get stored token and user data
       const storedToken = await getAuthToken();
@@ -166,6 +190,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Update state
       setToken(authToken);
       setUser(userData);
+
+      // Exit guest mode
+      await setGuestMode(false);
+      setIsGuest(false);
+
+      // Sync guest data if exists
+      // Note: syncGuestData will be called separately by the UI after registration
     } catch (error: any) {
       console.error('Register error:', error);
       throw new Error(error.message || 'Registration failed');
@@ -188,8 +219,63 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear state
       setToken(null);
       setUser(null);
+
+      // Enter guest mode after logout
+      await setGuestMode(true);
+      setIsGuest(true);
     } catch (error) {
       console.error('Logout error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Skip authentication and enter guest mode
+   */
+  const skipAuthentication = async () => {
+    try {
+      setLoading(true);
+
+      // Set guest mode flag
+      await setGuestMode(true);
+      setIsGuest(true);
+    } catch (error) {
+      console.error('Error skipping authentication:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Sync guest data to backend after registration/login
+   * This is a placeholder - actual implementation will be in the sync service
+   */
+  const syncGuestData = async () => {
+    try {
+      setLoading(true);
+
+      // Check if there's local data to sync
+      const localData = await hasLocalGuestData();
+
+      if (!localData) {
+        console.log('No local data to sync');
+        return;
+      }
+
+      // TODO: Implement actual sync logic
+      // This will be implemented in a separate sync service
+      console.log('Sync functionality will be implemented in sync service');
+
+      // After successful sync, clear guest data and exit guest mode
+      await clearGuestData();
+      await setGuestMode(false);
+      setIsGuest(false);
+      setHasLocal(false);
+    } catch (error) {
+      console.error('Error syncing guest data:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -200,10 +286,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user,
     token,
     loading,
+    isGuestMode: isGuest,
+    hasLocalData: hasLocal,
     login,
     register,
     logout,
     checkAuth,
+    skipAuthentication,
+    syncGuestData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -9,7 +9,7 @@ type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const theme = useTheme();
-  const { login, loading } = useAuth();
+  const { login, loading, skipAuthentication } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,6 +35,18 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
    */
   const handleNavigateToRegister = () => {
     navigation.navigate('Register');
+  };
+
+  /**
+   * Skip authentication and enter guest mode
+   */
+  const handleSkipAuthentication = async () => {
+    try {
+      await skipAuthentication();
+      // Navigation will happen automatically when isGuestMode changes
+    } catch (error: any) {
+      setError(error.message || 'Something went wrong. Please try again.');
+    }
   };
 
   return (
@@ -127,6 +139,19 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               </View>
             </Card.Content>
           </Card>
+
+          {/* Skip for now */}
+          <View style={styles.skipContainer}>
+            <Button
+              mode="text"
+              onPress={handleSkipAuthentication}
+              disabled={loading}
+              textColor={theme.colors.onSurfaceVariant}
+              style={styles.skipButton}
+            >
+              Skip for now
+            </Button>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -180,6 +205,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 8,
+  },
+  skipContainer: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  skipButton: {
     marginTop: 8,
   },
 });
